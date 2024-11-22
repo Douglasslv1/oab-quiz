@@ -2,81 +2,128 @@
 
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <meta charset="UTF-8">
+  <head>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <meta charset="UTF-8" />
     <title>Perguntas e Respostas</title>
     <style>
-        .resposta {
-            display: none;
-            color: green;
-            margin-top: 5px;
-        }
-        .alternativa {
-            cursor: pointer;
-            margin: 5px;
-            display: inline-block;
-            padding: 5px;
-        }
-        .alternativa-selecionada {
-            background-color: #d0e6ff;
-            font-weight: bold;
-        }
+      .resposta {
+        display: none;
+        color: green;
+        margin-top: 5px;
+      }
+      .alternativa {
+        cursor: pointer;
+        margin: 5px;
+        display: inline-block;
+        padding: 5px;
+      }
+      .alternativa-selecionada {
+        background-color: #d0e6ff;
+        font-weight: bold;
+      }
     </style>
     <script>
-        let alternativaSelecionada = null;
+      let alternativaSelecionada = null;
 
-        function selecionarAlternativa(alternativaId) {
-            // Limpa a seleção anterior, se houver
-            if (alternativaSelecionada) {
-                alternativaSelecionada.classList.remove("alternativa-selecionada");
-            }
-            // Marca a nova alternativa selecionada
-            alternativaSelecionada = document.getElementById(alternativaId);
-            alternativaSelecionada.classList.add("alternativa-selecionada");
+      function selecionarAlternativa(alternativaId) {
+        // Limpa a seleção anterior, se houver
+        if (alternativaSelecionada) {
+          alternativaSelecionada.classList.remove("alternativa-selecionada");
         }
+        // Marca a nova alternativa selecionada
+        alternativaSelecionada = document.getElementById(alternativaId);
+        alternativaSelecionada.classList.add("alternativa-selecionada");
+      }
 
-        function mostrarRespostas(perguntaId) {
-            if (alternativaSelecionada) {
-                // Exibe todas as respostas associadas à pergunta
-                const respostas = document.getElementsByClassName("resposta-" + perguntaId);
-                for (let resposta of respostas) {
-                    resposta.style.display = "block";
-                }
+      function mostrarRespostas(perguntaId) {
+        if (alternativaSelecionada) {
+          // Exibe todas as respostas associadas à pergunta
+          const respostas = document.getElementsByClassName(
+            "resposta-" + perguntaId
+          );
+          for (let resposta of respostas) {
+            resposta.style.display = "block";
+          }
+        } else {
+          alert("Por favor, selecione uma alternativa antes de responder.");
+        }
+      }
+      function mostrarRespostas(perguntaId) {
+        if (alternativaSelecionada) {
+          // Obtém todas as alternativas da pergunta
+          const alternativas = document.querySelectorAll(
+            `input[name="grupo-${perguntaId}"]`
+          );
+
+          // Itera pelas alternativas e aplica as classes corretas/incorretas
+          alternativas.forEach((alternativa) => {
+            const isCorreta = alternativa.dataset.correta === "true";
+            const label = alternativa.nextElementSibling; // Acessa o <label> associado
+
+            if (isCorreta) {
+              // Marca a alternativa correta em verde
+              label.style.color = "green";
+              label.style.fontWeight = "bold";
             } else {
-                alert("Por favor, selecione uma alternativa antes de responder.");
+              // Marca as alternativas incorretas em vermelho
+              label.style.color = "red";
+              label.style.fontWeight = "bold";
             }
+          });
+        } else {
+          alert("Por favor, selecione uma alternativa antes de responder.");
         }
+      }
     </script>
-</head>
-<body>
-    <h1 class="perguntas">Perguntas e Respostas</h1>
+  </head>
+  <body>
+    <div class="navMenu">
+      <img class="logo" src="/static/img/logo.png" alt="logoquiz" />
+      <h1 class="perguntas">Perguntas e Respostas</h1>
+    </div>
     <ul>
-        {% for pergunta in perguntas %}
+      {% for pergunta in perguntas %}
+      <li>
+        <div class="Titlle">
+          <strong>{{ pergunta.texto }}</strong>
+        </div>
+        <div class="questions">
+          <ul>
+            {% for resposta in pergunta.respostas.all %}
             <li>
-                <strong class="Titlle">{{ pergunta.texto }}</strong>
-                <ul>
-                    {% for resposta in pergunta.respostas.all %}
-                        <li>
-                            <span id="alternativa-{{ resposta.id }}" class="alternativa" onclick="selecionarAlternativa('alternativa-{{ resposta.id }}')"><input type="checkbox">
-                                {{ letras.forloop.counter0 }}. 
-                            </span>
-                            {{ resposta.observacao }}
-                            
-                            <div id="resposta-{{ resposta.id }}" class="resposta resposta-{{ pergunta.id }}">
-                                Resposta: {{ resposta.resposta }}
-                            </div>
-                        </li>
-                    {% empty %}
-                        <li>Sem alternativas disponíveis.</li>
-                    {% endfor %}
-                </ul>
-                <button class="button" onclick="mostrarRespostas('{{ pergunta.id }}')">Responder</button>
+                <input
+                name="grupo-{{ pergunta.id }}"
+                id="alternativa-{{ resposta.id }}"
+                type="radio"
+                data-correta="{{ resposta.correta }}"
+                onchange="selecionarAlternativa('alternativa-{{ resposta.id }}')"
+              />
+              {{ letras.forloop.counter0 }} {{ resposta.observacao }}
+
+              <div
+                id="resposta-{{ resposta.id }}"
+                class="resposta resposta-{{ pergunta.id }}"
+              >
+                Resposta: {{ resposta.resposta }}
+              </div>
             </li>
-        {% empty %}
-            <li>Não há perguntas disponíveis.</li>
-        {% endfor %}
+            {% empty %}
+            <li>Sem alternativas disponíveis.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <button class="button" onclick="mostrarRespostas('{{ pergunta.id }}')">
+          Responder
+        </button>
+      </li>
+      {% empty %}
+      <li>Não há perguntas disponíveis.</li>
+      {% endfor %}
     </ul>
-</body>
+  </body>
 </html>
