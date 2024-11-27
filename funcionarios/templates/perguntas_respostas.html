@@ -2,128 +2,150 @@
 
 <!DOCTYPE html>
 <html lang="pt-br">
-  <head>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-    />
-    <meta charset="UTF-8" />
-    <title>Perguntas e Respostas</title>
-    <style>
-      .resposta {
-        display: none;
-        color: green;
-        margin-top: 5px;
-      }
-      .alternativa {
-        cursor: pointer;
-        margin: 5px;
-        display: inline-block;
-        padding: 5px;
-      }
-      .alternativa-selecionada {
-        background-color: #d0e6ff;
-        font-weight: bold;
-      }
-    </style>
-    <script>
-      let alternativaSelecionada = null;
 
-      function selecionarAlternativa(alternativaId) {
-        // Limpa a seleção anterior, se houver
-        if (alternativaSelecionada) {
-          alternativaSelecionada.classList.remove("alternativa-selecionada");
+<head>
+  <link rel="stylesheet" href="{% static 'C:\Users\Douglas\Desktop\oab-quiz\static\css\style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <meta charset="UTF-8" />
+  <title>Perguntas e Respostas</title>
+
+  <script>
+    let timers = {}; // Armazena os temporizadores para cada pergunta
+    let temposRestantes = {}; // Armazena o tempo restante para cada pergunta
+    let pontuacao = 0; // Acumula os pontos do usuário
+
+    function iniciarTimer(perguntaId, duracao = 15) {
+      if (timers[perguntaId]) return; // Se já tiver iniciado, não reinicia
+
+      temposRestantes[perguntaId] = duracao;
+      atualizarTimer(perguntaId);
+
+      timers[perguntaId] = setInterval(() => {
+        temposRestantes[perguntaId]--;
+
+        atualizarTimer(perguntaId);
+
+        if (temposRestantes[perguntaId] < 0) {
+          clearInterval(timers[perguntaId]);
+          timers[perguntaId] = null;
+
+          bloquearAlternativas(perguntaId); // Bloqueia as alternativas dessa pergunta
+          alert(`Tempo esgotado para a pergunta ${perguntaId}!`);
         }
-        // Marca a nova alternativa selecionada
-        alternativaSelecionada = document.getElementById(alternativaId);
-        alternativaSelecionada.classList.add("alternativa-selecionada");
-      }
+      }, 1000);
+    }
 
-      function mostrarRespostas(perguntaId) {
-        if (alternativaSelecionada) {
-          // Exibe todas as respostas associadas à pergunta
-          const respostas = document.getElementsByClassName(
-            "resposta-" + perguntaId
-          );
-          for (let resposta of respostas) {
-            resposta.style.display = "block";
+    function atualizarTimer(perguntaId) {
+      const timerElement = document.getElementById(`timer-${perguntaId}`);
+      if (timerElement) {
+        timerElement.innerText = `Tempo restante: ${temposRestantes[perguntaId]}s`;
+      }
+    }
+
+    function bloquearAlternativas(perguntaId) {
+      const inputs = document.querySelectorAll(`input[name="grupo-${perguntaId}"]`);
+      inputs.forEach((input) => {
+        input.disabled = true;
+      });
+    }
+
+    function selecionarAlternativa(alternativaId, perguntaId) {
+      iniciarTimer(perguntaId); // Inicia o timer ao selecionar a primeira alternativa
+      const alternativaSelecionada = document.getElementById(alternativaId);
+
+      const alternativas = document.querySelectorAll(`input[name="grupo-${perguntaId}"]`);
+      alternativas.forEach((input) => input.parentElement.classList.remove("alternativa-selecionada"));
+
+      alternativaSelecionada.parentElement.classList.add("alternativa-selecionada");
+    }
+
+    function mostrarRespostas(perguntaId) {
+      const alternativas = document.querySelectorAll(`input[name="grupo-${perguntaId}"]`);
+      let acertou = false;
+
+      alternativas.forEach((alternativa) => {
+        const isCorreta = alternativa.dataset.correta === "true"; // Lê o valor correto
+        const label = alternativa.nextElementSibling; // Label associado à alternativa
+
+        if (isCorreta) {
+          label.style.color = "green"; // Marca a resposta correta como verde
+          label.style.fontWeight = "bold";
+
+          if (alternativa.checked) {
+            acertou = true; // Usuário selecionou a resposta correta
+            pontuacao++; // Incrementa a pontuação
           }
         } else {
-          alert("Por favor, selecione uma alternativa antes de responder.");
+          label.style.color = "red"; // Marca a resposta incorreta como vermelha
+          label.style.fontWeight = "bold";
         }
+
+        alternativa.disabled = true; // Desabilita todas as alternativas
+      });
+
+      atualizarPontuacao(); // Atualiza a pontuação exibida
+      clearInterval(timers[perguntaId]); // Para o timer da pergunta
+      timers[perguntaId] = null;
+
+      // Exibe popup de acerto ou erro
+      if (acertou) {
+        alert(`Você acertou a pergunta ${perguntaId}!`);
+      } else {
+        alert(`Você errou a pergunta ${perguntaId}!`);
       }
-      function mostrarRespostas(perguntaId) {
-        if (alternativaSelecionada) {
-          // Obtém todas as alternativas da pergunta
-          const alternativas = document.querySelectorAll(
-            `input[name="grupo-${perguntaId}"]`
-          );
+    }
+    function atualizarPontuacao() {
+      document.getElementById("pontuacao").innerText = `Pontuação: ${pontuacao}`;
+    }
 
-          // Itera pelas alternativas e aplica as classes corretas/incorretas
-          alternativas.forEach((alternativa) => {
-            const isCorreta = alternativa.dataset.correta === "true";
-            const label = alternativa.nextElementSibling; // Acessa o <label> associado
 
-            if (isCorreta) {
-              // Marca a alternativa correta em verde
-              label.style.color = "green";
-              label.style.fontWeight = "bold";
-            } else {
-              // Marca as alternativas incorretas em vermelho
-              label.style.color = "red";
-              label.style.fontWeight = "bold";
-            }
-          });
-        } else {
-          alert("Por favor, selecione uma alternativa antes de responder.");
-        }
-      }
-    </script>
-  </head>
-  <body>
-    <div class="navMenu">
-      <img class="logo" src="/static/img/logo.png" alt="logoquiz" />
-      <h1 class="perguntas">Perguntas e Respostas</h1>
-    </div>
-    <ul>
-      {% for pergunta in perguntas %}
-      <li>
-        <div class="Titlle">
-          <strong>{{ pergunta.texto }}</strong>
-        </div>
-        <div class="questions">
-          <ul>
-            {% for resposta in pergunta.respostas.all %}
-            <li>
-                <input
-                name="grupo-{{ pergunta.id }}"
-                id="alternativa-{{ resposta.id }}"
-                type="radio"
-                data-correta="{{ resposta.correta }}"
-                onchange="selecionarAlternativa('alternativa-{{ resposta.id }}')"
-              />
-              {{ letras.forloop.counter0 }} {{ resposta.observacao }}
 
-              <div
-                id="resposta-{{ resposta.id }}"
-                class="resposta resposta-{{ pergunta.id }}"
-              >
-                Resposta: {{ resposta.resposta }}
-              </div>
-            </li>
-            {% empty %}
-            <li>Sem alternativas disponíveis.</li>
-            {% endfor %}
-          </ul>
-        </div>
-        <button class="button" onclick="mostrarRespostas('{{ pergunta.id }}')">
-          Responder
-        </button>
-      </li>
-      {% empty %}
-      <li>Não há perguntas disponíveis.</li>
-      {% endfor %}
-    </ul>
-  </body>
+  </script>
+</head>
+
+<body>
+  <div class="navMenu">
+    <img class="logo" src="/static/img/logo.png" alt="logoquiz" />
+    <h1 class="perguntas">Perguntas e Respostas</h1>
+  </div>
+
+  <div id="global_timer">
+    <div id="pontuacao">Pontuação: 0</div>
+  </div>
+
+  <ul>
+    {% for pergunta in perguntas %}
+    <li>
+      <div class="Titlle">
+        <strong>{{ pergunta.texto }}</strong>
+      </div>
+
+      <div class="questions">
+        <ul>
+          {% for resposta in pergunta.respostas.all %}
+          <li>
+            <input name="grupo-{{ pergunta.id }}" id="alternativa-{{ resposta.id }}" type="radio"
+              data-correta="{{ resposta.correta|yesno:'true,false' }}"
+              onchange="selecionarAlternativa('alternativa-{{ resposta.id }}', '{{ pergunta.id }}')" />
+            <label for="alternativa-{{ resposta.id }}">
+              {{ resposta.observacao }}
+            </label>
+          </li>
+          {% empty %}
+          <li>Sem alternativas disponíveis.</li>
+          {% endfor %}
+        </ul>
+      </div>
+      <div class="Timerr" id="timer-{{ pergunta.id }}">
+        Tempo restante: 15s
+      </div>
+      <button class="button" onclick="mostrarRespostas('{{ pergunta.id }}')">
+        Responder
+      </button>
+    </li>
+    {% empty %}
+    <li>Não há perguntas disponíveis.</li>
+    {% endfor %}
+  </ul>
+</body>
 </html>
